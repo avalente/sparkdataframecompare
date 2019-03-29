@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Differences between ${table_1} and ${table_2}</title>
+
+    <style>
+        body,
+        button,
+        input,
+        select,
+        textarea {
+        font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+        }
+
+        code,
+        pre {
+        -moz-osx-font-smoothing: auto;
+        -webkit-font-smoothing: auto;
+        font-family: monospace;
+        }
+
+        body {
+        color: #4a4a4a;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        }
+
+        a {
+        color: #3273dc;
+        cursor: pointer;
+        text-decoration: none;
+        }
+
+        a strong {
+        color: currentColor;
+        }
+
+        a:hover {
+        color: #363636;
+        }
+
+        code {
+        background-color: whitesmoke;
+        color: #ff3860;
+        font-size: 0.875em;
+        font-weight: normal;
+        padding: 0.25em 0.5em 0.25em;
+        }
+
+        .null{
+            background-color: lightgoldenrodyellow;
+        }
+
+        div.group{
+
+        }
+
+        .table-fullwidth {
+            overflow-y: auto;
+            height: 800px;
+        }
+
+        table th {
+        color: #363636;
+        }
+
+        table  {
+            border-collapse: collapse; width: 100%;
+        }
+        th, td {
+            padding: 8px 16px;
+        }
+        th     {
+            background-color:lightblue;
+        }
+
+        .content figure {
+            margin-left: 2em;
+            margin-right: 2em;
+            text-align: center;
+        }
+
+        .group {
+            margin-left: 15px;
+        }
+
+        .columns {
+            display: flex;
+        }
+
+        .column {
+            margin: 1.25rem;
+        }
+
+        .column.is-one-third {
+            flex: none;
+            width: 33%;
+        }
+
+        .column.is-one-fourth {
+            flex: none;
+            width: 25%;
+        }
+
+        .column.is-two-fourths {
+            flex: none;
+            width: 50%;
+        }
+
+        .box {
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
+            color: #4a4a4a;
+            display: block;
+            padding: 1.25rem;
+        }
+
+
+        .scrolling {
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .title {
+            margin: 0px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+    <section class="section">
+        <div class="container is-fluid group">
+            <h1 class="title">Differences between ${table_1} and ${table_2}</h1>
+
+            <h3>Summary</h3>
+            <div class="columns">
+                <div class="column is-one-fourth box">
+                    <p>Generated on ${report_time}</p>
+                    <div class="content">
+                        <dl>
+                            <dt>First table name</dt>
+                            <dd><strong>${table_1}</strong></dd>
+                            <dt>Second table name</dt>
+                            <dd><strong>${table_2}</strong></dd>
+                            <dt>Tables are matched by the following columns</dt>
+                            <dd><span class="key-col-list">${paste0(join_cols, collapse=", ")}</span></dd>
+                        </dl>
+                    </div>
+
+                    <p>The tolerance for difference between numeric columns is 10<sup>-6</sup></p>
+                </div>
+
+                <div class="column is-one-fourth box">
+                    <p><strong>${rows$missing_in_1$count}</strong> rows are available in <em>${table_2}</em> but missing in
+                        <em>${table_1}</em></p>
+                    <p><strong>${rows$missing_in_2$count}</strong> rows are available in <em>${table_1}</em> but missing in
+                        <em>${table_2}</em></p>
+                    <p><strong>${rows$common$count}</strong> rows are available in both tables</p>
+                    <p><strong>${columns$missing_in_1$count}</strong> column are available in <em>${table_2}</em> but missing
+                        in <em>${table_1}</em></p>
+                    <p><strong>${columns$missing_in_2$count}</strong> column are available in <em>${table_1}</em> but missing
+                        in <em>${table_2}</em></p>
+                    <p><strong>${columns$common$count}</strong> columns are common to both tables</p>
+                    <p><strong>${length(columns$compare_columns)}</strong> must be checked, of which <strong>${diff_cnt}</strong> have at least one difference between the two tables while <strong>${length(data$columns$compare_columns) - diff_cnt}</strong> are identical</p>
+                </div>
+            </div>
+
+
+            <h3 class="title">Details</h3>
+            <div class="columns">
+                <div class="column is-one-fourth scrolling box">
+                    <h5 class="">Columns missing in <em>${table_1}</em></h5>
+                    ${render_list(columns$missing_in_1$names)}
+                </div>
+
+                <div class="column is-one-fourth scrolling box">
+                    <h5 class="title is-5">Columns missing in <em>${table_2}</em></h5>
+                    ${render_list(columns$missing_in_2$names)}
+                </div>
+            </div>
+
+            <div class="content figure">
+                <figure>
+                    <img src="${rows$histogram}" width="800" height="800">
+                    <figcaption>Distribution of differences per row</figcaption>
+                </figure>
+            </div>
+
+            <div class="group">
+                <h5 class="title is-5">Column summary</h5>
+                ${render_table(columns$diff, "")}
+            </div>
+
+        </div>
+    </section>
+    <script type="text/javascript">
+        if (!NodeList.prototype.forEach && Array.prototype.forEach) {
+            NodeList.prototype.forEach = Array.prototype.forEach;
+        }
+
+        window.onload = function() {
+            function tableFixHead (e) {
+                var el = e.target, sT = el.scrollTop;
+                el.querySelectorAll("thead th").forEach(function(th){
+                    th.style.transform = 'translateY('+ sT +'px)';
+                });
+            }
+            document.querySelectorAll(".table-fullwidth").forEach(function(el){
+                el.addEventListener("scroll", tableFixHead);
+            });
+        };
+
+        </script>
+</body>
+
+</html>

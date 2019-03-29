@@ -1,0 +1,14 @@
+Package: sparkdataframecompare
+Type: Package
+Title: Compare two spark dataframes
+Version: 0.1.0
+Author: Angelantonio Valente <y3sman@gmail.com>
+Maintainer: Angelantonio Valente <y3sman@gmail.com>
+Description: Compare two Spark tables and produce a sensible report.
+License: BSD_2_clause + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: ggplot2, rlang
+Suggests:  SparkR (>= 2.3.1)
+Depends: R (>= 3.2.0)
+RoxygenNote: 6.0.1
