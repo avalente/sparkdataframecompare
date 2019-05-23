@@ -166,19 +166,44 @@ compare_column <- function(df, df1, df2, column_name, table_name_1, table_name_2
     col2 <- df[[table_name_2]]
 
     if (is_numeric_type(type1) && is_numeric_type(type2)){
+        # count NAs
+        tmp <- SparkR::mutate(df,
+                              "nan_1"=SparkR::when(SparkR::isnan(col1), 1),
+                              "null_1"=SparkR::when(SparkR::isNull(col1), 1),
+                              "nan_2"=SparkR::when(SparkR::isnan(col2), 1),
+                              "null_2"=SparkR::when(SparkR::isNull(col2), 1))
+        tmp <-
+            SparkR::mutate(tmp,
+                           NA_1=SparkR::coalesce(tmp$nan_1, tmp$null_1, lit(0)),
+                           NA_2=SparkR::coalesce(tmp$nan_2, tmp$null_2, lit(0)))
+        tmp <-
+            SparkR::mutate(tmp, NA_both=SparkR::ifelse(tmp$NA_1 + tmp$NA_2 > lit(1), 1, 0))
+
+
+        tmp <- SparkR::summarize(tmp, NA_1=sum(tmp$NA_1), NA_2=sum(tmp$NA_2), NA_both=sum(tmp$NA_both))
+        na_count <- SparkR::collect(tmp)
+
         df <-
             SparkR::where(df, !(SparkR::isnan(col1) & SparkR::isnan(col2)) & abs(col1 - col2) > numeric_tolerance)
         df <-
             SparkR::mutate(df, "ABS_DIFF"=(col1 - col2), "REL_DIFF"=((col1-col2)/col1))
-
     } else{
+        # count NAs
+        tmp <- SparkR::mutate(df,
+                              "NA_1"=SparkR::otherwise(SparkR::when(SparkR::isNull(col1), 1), 0),
+                              "NA_2"=SparkR::otherwise(SparkR::when(SparkR::isNull(col2), 1), 0),
+                              "NA_both"=SparkR::otherwise(SparkR::when(SparkR::isNull(col1) & SparkR::isNull(col2), 1), 0))
+        tmp <- SparkR::summarize(tmp, NA_1=sum(tmp$NA_1), NA_2=sum(tmp$NA_2), NA_both=sum(tmp$NA_both))
+        na_count <- SparkR::collect(tmp)
+
         df <-
             SparkR::where(df, !(SparkR::isNull(col1) & SparkR::isNull(col2)) & col1 != col2)
         df <-
             SparkR::mutate(df, "ABS_DIFF"=SparkR::lit(1), "REL_DIFF"=SparkR::lit(1))
     }
 
-    do.call(SparkR::arrange, append(df, lapply(key_cols, function(x){df[[x]]})))
+    df <- do.call(SparkR::arrange, append(df, lapply(key_cols, function(x){df[[x]]})))
+    list(df=df, na=na_count)
 }
 
 compare_rows <- function(df, df1, df2, cols, spec1, spec2, key_cols, numeric_tolerance=1e-6){
@@ -366,7 +391,8 @@ compare <- function(table_name_1, table_name_2, join_cols, report_spec, exclude_
         mapply(function(x, i){
             progress_fun(i, length(compare_columns), x)
 
-            df <- compare_column(rows_common, df1, df2, x, table_name_1, table_name_2, spec1, spec2, join_cols)
+            res <- compare_column(rows_common, df1, df2, x, table_name_1, table_name_2, spec1, spec2, join_cols)
+            df <- res$df
             SparkR::persist(df, "MEMORY_ONLY_2")
 
             summary <- SparkR::collect(SparkR::summary(SparkR::select(df, "ABS_DIFF", "REL_DIFF")))
@@ -375,7 +401,6 @@ compare <- function(table_name_1, table_name_2, join_cols, report_spec, exclude_
             names(abs_diff) <- summary$summary
             rel_diff <- as.list(as.double(summary$REL_DIFF))
             names(rel_diff) <- summary$summary
-            stats <- list("abs_diff"=abs_diff, "rel_diff"=rel_diff)
 
             if (abs_diff$count > 0){
                 file <- save_diff_col_file(df, x, report_spec$output_directory, report_spec$cols_diff_limit, report_spec$csv_specs)
@@ -413,6 +438,9 @@ compare <- function(table_name_1, table_name_2, join_cols, report_spec, exclude_
                 "abs_diff_p50"=abs_diff$`50%`,
                 "abs_diff_p75"=abs_diff$`75%`,
                 "abs_diff_max"=abs_diff$max,
+                "NA_1"=res$na$NA_1,
+                "NA_2"=res$na$NA_2,
+                "NA_both"=res$na$NA_both,
                 "file_local"=file_local,
                 "file_name"=file_name,
                 "has_differences"=abs_diff$count > 0
