@@ -40,7 +40,7 @@ report_spec <- function(output_directory, report_kind="text",
                         missing_right_limit=NA, missing_right_only_keys=FALSE,
                         cols_diff_limit=NULL, csv_specs=NULL, html_specs=NULL,
                         variables_documentation=NULL){
-    report_kinds = list("html"=html_report, "text"=text_report, "null"=null_report)
+    report_kinds <- list("html"=html_report, "text"=text_report, "null"=null_report)
 
     if (!report_kind %in% names(report_kinds)){
         stop(sprintf("Invalid report_kind - should be one of: %s", paste(names(report_kinds), collapse=", ")))
@@ -364,7 +364,7 @@ compare <- function(table_name_1, table_name_2, join_cols, report_spec, exclude_
 
     diff_cols <-
         mapply(function(x, i){
-            progress_fun(i, length(compare_columns))
+            progress_fun(i, length(compare_columns), x)
 
             df <- compare_column(rows_common, df1, df2, x, table_name_1, table_name_2, spec1, spec2, join_cols)
             SparkR::persist(df, "MEMORY_ONLY_2")
