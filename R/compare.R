@@ -167,37 +167,37 @@ compare_column <- function(df, df1, df2, column_name, table_name_1, table_name_2
 
     if (is_numeric_type(type1) && is_numeric_type(type2)){
         # count NAs
-        tmp <- SparkR::mutate(df,
+        df <- SparkR::mutate(df,
                               "nan_1"=SparkR::when(SparkR::isnan(col1), 1),
                               "null_1"=SparkR::when(SparkR::isNull(col1), 1),
                               "nan_2"=SparkR::when(SparkR::isnan(col2), 1),
                               "null_2"=SparkR::when(SparkR::isNull(col2), 1))
-        tmp <-
-            SparkR::mutate(tmp,
-                           NA_1=SparkR::coalesce(tmp$nan_1, tmp$null_1, lit(0)),
-                           NA_2=SparkR::coalesce(tmp$nan_2, tmp$null_2, lit(0)))
-        tmp <-
-            SparkR::mutate(tmp, NA_both=SparkR::ifelse(tmp$NA_1 + tmp$NA_2 > lit(1), 1, 0))
+        df <-
+            SparkR::mutate(df,
+                           NA_1=SparkR::coalesce(df$nan_1, df$null_1, lit(0)),
+                           NA_2=SparkR::coalesce(df$nan_2, df$null_2, lit(0)))
+        df <-
+            SparkR::mutate(df, NA_both=SparkR::ifelse(df$NA_1 + df$NA_2 > lit(1), 1, 0), NA_count=df$NA_1 + df$NA_2)
 
-
-        tmp <- SparkR::summarize(tmp, NA_1=sum(tmp$NA_1), NA_2=sum(tmp$NA_2), NA_both=sum(tmp$NA_both))
-        na_count <- SparkR::collect(tmp)
+        na_count <- SparkR::collect(SparkR::summarize(df, NA_1=sum(df$NA_1), NA_2=sum(df$NA_2), NA_both=sum(df$NA_both)))
 
         df <-
-            SparkR::where(df, !(SparkR::isnan(col1) & SparkR::isnan(col2)) & abs(col1 - col2) > numeric_tolerance)
+            SparkR::where(df, (df$NA_count == 1) | (df$NA_count == 0 & abs(col1 - col2) > numeric_tolerance))
         df <-
-            SparkR::mutate(df, "ABS_DIFF"=(col1 - col2), "REL_DIFF"=((col1-col2)/col1))
+            SparkR::mutate(df, "ABS_DIFF"=SparkR::ifelse(df$NA_count==0, col1 - col2, 0), "REL_DIFF"=SparkR::ifelse(df$NA_count==0, (col1-col2)/col1, 0))
     } else{
         # count NAs
-        tmp <- SparkR::mutate(df,
+        df <- SparkR::mutate(df,
                               "NA_1"=SparkR::otherwise(SparkR::when(SparkR::isNull(col1), 1), 0),
                               "NA_2"=SparkR::otherwise(SparkR::when(SparkR::isNull(col2), 1), 0),
                               "NA_both"=SparkR::otherwise(SparkR::when(SparkR::isNull(col1) & SparkR::isNull(col2), 1), 0))
-        tmp <- SparkR::summarize(tmp, NA_1=sum(tmp$NA_1), NA_2=sum(tmp$NA_2), NA_both=sum(tmp$NA_both))
-        na_count <- SparkR::collect(tmp)
+
+        df <- SparkR::mutate(df, "NA_count"=df$NA_1 + df$NA_2)
+
+        na_count <- SparkR::collect(SparkR::summarize(df, NA_1=sum(df$NA_1), NA_2=sum(df$NA_2), NA_both=sum(df$NA_both)))
 
         df <-
-            SparkR::where(df, !(SparkR::isNull(col1) & SparkR::isNull(col2)) & col1 != col2)
+            SparkR::where(df, (df$NA_count == 1) | (df$NA_count == 0 & col1 != col2))
         df <-
             SparkR::mutate(df, "ABS_DIFF"=SparkR::lit(1), "REL_DIFF"=SparkR::lit(1))
     }

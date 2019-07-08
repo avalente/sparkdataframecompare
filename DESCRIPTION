@@ -1,7 +1,7 @@
 Package: sparkdataframecompare
 Type: Package
 Title: Compare two spark dataframes
-Version: 0.1.1
+Version: 0.2.0
 Author: Angelantonio Valente <y3sman@gmail.com>
 Maintainer: Angelantonio Valente <y3sman@gmail.com>
 Description: Compare two Spark tables and produce a sensible report.

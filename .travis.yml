@@ -5,3 +5,4 @@ before_install:
 
 env:
   - SPARK_HOME=/tmp/spark-2.3.3-bin-hadoop2.7
+  - _R_CHECK_FORCE_SUGGESTS_=0

@@ -94,7 +94,7 @@ test_that("Test NA count",{
     df_a <- data.frame(
         col_1 = c(1, 2, 3, 4, 5),
         col_2 = as.Date(c("2019-01-01", "2018-12-31", NA, "2018-10-31", "2018-09-30")),
-        col_3 = c("v1", "v2", "v3", "v4", NA),
+        col_3 = c("v1", "v2", "v6", "v4", NA),
         col_4 = c(NaN, 2.2, 3.3, 4.4, 5.5),
         col_5 = c(NA, 20L, NaN, 40L, 50L)
     )
@@ -103,7 +103,7 @@ test_that("Test NA count",{
         col_1 = c(1, 2, 3, 4, 5),
         col_2 = as.Date(c("2019-01-01", NA, "2018-12-31", "2018-10-31", "2018-09-30")),
         col_3 = c("v1", "v2", "v3", "v4", NA),
-        col_4 = c(2.2, NaN, 3.3, 4.4, 5.5),
+        col_4 = c(2.2, NaN, 3.3, 4.4, 5.4),
         col_5 = c(NA, NA, NA, NA, 50L)
     )
 
@@ -128,6 +128,7 @@ test_that("Test NA count",{
     expect_equal(df$NA_1, 1)
     expect_equal(df$NA_2, 1)
     expect_equal(df$NA_both, 0)
+    expect_equal(df$differences, 2)
     # col_3
     df <- col_diff[col_diff$name=="col_3",]
     expect_equal(df$type_1, df$type_2)
@@ -135,6 +136,7 @@ test_that("Test NA count",{
     expect_equal(df$NA_1, 1)
     expect_equal(df$NA_2, 1)
     expect_equal(df$NA_both, 1)
+    expect_equal(df$differences, 1)
     # col_4
     df <- col_diff[col_diff$name=="col_4",]
     expect_equal(df$type_1, df$type_2)
@@ -142,6 +144,7 @@ test_that("Test NA count",{
     expect_equal(df$NA_1, 1)
     expect_equal(df$NA_2, 1)
     expect_equal(df$NA_both, 0)
+    expect_equal(df$differences, 3)
     # col_5
     df <- col_diff[col_diff$name=="col_5",]
     expect_equal(df$type_1, df$type_2)
@@ -149,6 +152,7 @@ test_that("Test NA count",{
     expect_equal(df$NA_1, 2)
     expect_equal(df$NA_2, 4)
     expect_equal(df$NA_both, 2)
+    expect_equal(df$differences, 2)
 })
 
 teardown({
